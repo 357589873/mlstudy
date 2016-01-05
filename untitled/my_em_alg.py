@@ -4,7 +4,7 @@ import math
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-def run(sigma,):
+def run(sigma,mu,mu1,mu2):
 
 if __name__ == '__main__':
     run()
