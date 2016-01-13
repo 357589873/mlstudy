@@ -60,13 +60,15 @@ def plotTree(myTree,parentPt,nodeTxt):
     depth=getTreeDepth(myTree)
     firstStr=myTree.keys()[0]
     cntrPt=(plotTree.xoff+(1.0+float(numleafs))/2.0/plotTree.totalW,plotTree.yoff)
+    #画箭头中间的文字部分
     plotMidText(cntrPt,parentPt,nodeTxt)
+    #画箭头
     plotNode(firstStr,cntrPt,parentPt,decisionNode)
     secondDict=myTree[firstStr]
     plotTree.yoff=plotTree.yoff-1.0/plotTree.totalD
     for key in secondDict.keys():
         if type(secondDict[key]).__name__=='dict':
-            plotTree(secondDict[key],cntrPt,str[key])
+            plotTree(secondDict[key],cntrPt,str(key))
         else:
             plotTree.xoff=plotTree.xoff+1.0/plotTree.totalW
             plotNode(secondDict[key],(plotTree.yoff,plotTree.yoff),cntrPt,leafNode)
