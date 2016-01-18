@@ -76,5 +76,47 @@ def createTree(dataSet,labels):
         myTree[bestFeatLabel][value]=createTree(splitDataSet(dataSet,bestFeat,value),subLabels)
     return myTree
 
+def classify(inputTree,featLabels,testVec):
+    firstStr=inputTree.keys()[0]
+    secondDict=inputTree[firstStr]
+    featIndex=featLabels.index(firstStr)  #查找这个特征的索引值，也就是在数组的第几个
+    #print featIndex
+    #print secondDict
+    for key in secondDict.keys():
+        #print key
+        if testVec[featIndex]==key:
+           # print 'its ok'
+            if type(secondDict[key]).__name__=='dict':
+               # print 'this is dict'
+                classLabel=classify(secondDict[key],featLabels,testVec)
+            else:
+               # print 'this is not dict'
+                classLabel=secondDict[key]
+       # print 'not ok'
+    return classLabel
 
+'''
+#使用决策树执行分类
+def classify(inputTree, featLabels, testVec):
+    firstStr = inputTree.keys()[0]
+    secondDict = inputTree[firstStr]
+    featIndex = featLabels.index(firstStr)   #index方法查找当前列表中第一个匹配firstStr变量的元素的索引
+    for key in secondDict.keys():
+        if testVec[featIndex] == key:
+            if type(secondDict[key]).__name__ == 'dict':
+                classLabel = classify(secondDict[key], featLabels, testVec)
+            else: classLabel = secondDict[key]
+    return classLabel
+'''
+
+def storeTree(inputTree,filename):
+    import pickle
+    fw=open(filename,'w')
+    pickle.dump(inputTree,fw)
+    fw.close()
+
+def grabTree(filename):
+    import pickle
+    fr=open(filename)
+    return pickle.load(fr)
 
