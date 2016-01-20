@@ -154,6 +154,45 @@ def localWords(feed1,feed0):
         fullText.extend(wordList)
         classList.append(0)
     vocabList=createVocabList(docList)
-    top30Words=calcMostFreq()
+    top30Words=calcMostFreq(vocabList,fullText)
+    for pairW in top30Words:
+        if pairW[0] in vocabList:vocabList.remove(pairW[0])
+    trainingSet=range(2*minLen);testSet=[]
+    for i in range(20):
+        randIndex=int(random.uniform(0,len(trainingSet)))
+        testSet.append(trainingSet[randIndex])
+        del(trainingSet[randIndex])
+    trainMat=[];trainClass=[]
+    #之所以要有trainclass是因为调用trainNB0的时候需要用到。testclass不需要
+    for docIndex in trainingSet:
+        trainMat.append(bagOfWords2VecMN(vocabList,docList[docIndex]))
+        trainClass.append(classList[docIndex])
+    p0V,p1V,pSpam=trainNB0(array(trainMat),array(trainClass))
+    errorCount=0
+    for docIndex in testSet:
+        wordVector=bagOfWords2VecMN(vocabList,docList[docIndex])
+        if classifyNB(array(wordVector),p0V,p1V,pSpam)!=classList[docIndex]:
+            errorCount+=1
+    print 'the error rate is',float(errorCount)/len(testSet)
+    return vocabList,p0V,p1V
+
+def getTopWords(ny,sf):
+    import operator
+    vocabList,p0V,p1V=localWords(ny,sf)
+    topNY=[];topSF=[]
+    for i in range(len(p0V)):
+        if p0V[i]>-6.0:topSF.append((vocabList[i],p0V[i]))
+        if p1V[i]>-6.0:topNY.append((vocabList[i],p1V[i]))
+    sortedSF=sorted(topSF,key=lambda pair:pair[1],reverse=True)
+    print "sf..sf..sf..sf..sf..sf..sf..sf..sf..sf"
+    for item in sortedSF:
+        print item[0]
+    sortedNY=sorted(topNY,key=lambda pair:pair[1],reverse=True)
+    print "ny..ny..ny..ny..ny..ny..ny..ny..ny..ny"
+    for item in sortedNY:
+        print item[0]
+
+
+
 
 
