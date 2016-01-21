@@ -53,7 +53,7 @@ def retrieveTree(i):
 def plotMidText(cntrPt,parentPt,txtString):
     xmid=(parentPt[0]-cntrPt[0])/2.0+cntrPt[0]
     ymid=(parentPt[1]-cntrPt[1])/2.0+cntrPt[1]
-    createPlot().ax1.txt(xmid,ymid,txtString)
+    createPlot.ax1.text(xmid,ymid,txtString)
 
 def plotTree(myTree,parentPt,nodeTxt):
     numleafs=getNumLeafs(myTree)
@@ -64,9 +64,11 @@ def plotTree(myTree,parentPt,nodeTxt):
     plotMidText(cntrPt,parentPt,nodeTxt)
     #画箭头
     plotNode(firstStr,cntrPt,parentPt,decisionNode)
+    print cntrPt,parentPt
     secondDict=myTree[firstStr]
     plotTree.yoff=plotTree.yoff-1.0/plotTree.totalD
     for key in secondDict.keys():
+        print key
         if type(secondDict[key]).__name__=='dict':
             plotTree(secondDict[key],cntrPt,str(key))
         else:
@@ -79,7 +81,7 @@ def createPlot(inTree):
     fig=plt.figure(1,facecolor='white')
     fig.clf()
     axprops=dict(xticks=[],yticks=[])
-    createPlot.axl=plt.subplot(111,frameon=False,**axprops)
+    createPlot.ax1=plt.subplot(111,frameon=False,**axprops)
     plotTree.totalW=float(getNumLeafs(inTree))
     plotTree.totalD=float(getTreeDepth(inTree))
     plotTree.xoff=-0.5/plotTree.totalW;plotTree.yoff=1.0
