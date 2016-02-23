@@ -108,3 +108,13 @@ def handwritingClassTest():
         if(classifierResult !=classNumStr):errorCount+=1.0
     print "\nthe total number of errors is:%d" % errorCount
     print "\nthe total error rate is: %f "% (errorCount/float(mTest))
+
+def draw():
+    import matplotlib
+    import matplotlib.pyplot as plt
+    datingDataMat,datingLabels=file2matrix('datingTestSet2.txt')
+    fig=plt.figure()
+    ax=fig.add_subplot(111)
+    print len(datingDataMat[:,1]),len(datingDataMat[:,2]),len(datingLabels)
+    ax.scatter(datingDataMat[:,1],datingDataMat[:,2],80.0*datingLabels,1.0*array(datingLabels))
+    plt.show()

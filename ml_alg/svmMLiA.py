@@ -1,5 +1,6 @@
 #coding:utf-8
 from numpy import *
+#from math import *
 def loadDataSet(filename):
     dataMat=[];labelMat=[]
     fr=open(filename)
@@ -80,7 +81,7 @@ def smosimple(dataMatIn,classLabels,C,toler,maxIter):
         else:iter=0
         print "iteration number: %d" % iter
     return  b,alphas
-
+'''
 class optStruct:
     def __init__(self,dataMatIn,classLabels,C,toler):
         self.X=dataMatIn
@@ -90,10 +91,39 @@ class optStruct:
         self.m=shape(dataMatIn)[0]
         self.alphas=mat(zeros((self.m,1)))
         self.b=0
+        self.eCache=mat(zeros((self.m,2)))'''
+def kernelTrans(X,A,kTup):
+    m,n=shape(X)
+    K=mat(zeros((m,1)))
+    #第一个参数是描述类型的
+    if kTup[0]=='lin':K=X*A.T
+    elif kTup[0]=='rbf':
+        for j in range(m):
+            deltaRow=X[j,:]-A
+            K[j]=deltaRow*deltaRow.T
+        #print K/(-1*kTup[1]**2)
+        #for i in range(len(K)):
+        #   print i,exp(K[i]/(-1*kTup[1]**2)) ,
+        K = exp(K/(-1*kTup[1]**2))
+    else:raise NameError('not recognized this kernel')
+    return K
+
+class optStruct:
+    def __init__(self,dataMatIn,classLabels,C,toler,kTup):
+        self.X=dataMatIn
+        self.labelMat=classLabels
+        self.C=C
+        self.tol=toler
+        self.m=shape(dataMatIn)[0]
+        self.alphas=mat(zeros((self.m,1)))
+        self.b=0
         self.eCache=mat(zeros((self.m,2)))
+        self.K=mat(zeros((self.m,self.m)))
+        for i in range(self.m):
+            self.K[:,i]=kernelTrans(self.X,self.X[i,:],kTup)
 
 def calcEk(oS,k):
-    a=multiply(oS.alphas,oS.labelMat).T*(oS.X*oS.X[k,:].T)
+    a=multiply(oS.alphas,oS.labelMat).T*oS.K[:,k]
     #print 'a is\n',a
     fxk=float(a)+oS.b
     Ek=fxk-float(oS.labelMat[k])
@@ -135,8 +165,7 @@ def innerL(i,oS):
             L=max(0,oS.alphas[j]+oS.alphas[i]-oS.C)
             H=min(oS.C,oS.alphas[j]+oS.alphas[i])
         if L==H :print "L==H";return 0
-        eta=2.0*oS.X[i,:]*oS.X[j,:].T-oS.X[i,:]*oS.X[i,:].T-\
-            oS.X[j,:]*oS.X[j,:].T
+        eta=2.0*oS.K[i,j]-oS.K[i,i]-oS.K[j,j]
         if eta>=0:print "eta>=0";return 0
         oS.alphas[j]-=oS.labelMat[j]*(Ei-Ej)/eta
         oS.alphas[j]=clipAlpha(oS.alphas[j],H,L)
@@ -146,11 +175,11 @@ def innerL(i,oS):
         oS.alphas[i]+=oS.labelMat[j]*oS.labelMat[i]*(alphaJold-oS.alphas[j])
         updateEk(oS,i)
         b1=oS.b-Ei-oS.labelMat[i]*(oS.alphas[i]-alphaIold)*\
-        oS.X[i,:]*oS.X[i,:].T-oS.labelMat[j]*(oS.alphas[j]-alphaJold)*\
-        oS.X[i,:]*oS.X[j,:].T
+        oS.K[i,i]-oS.labelMat[j]*(oS.alphas[j]-alphaJold)*\
+        oS.K[i,j]
         b2=oS.b-Ej-oS.labelMat[i]*(oS.alphas[i]-alphaIold)*\
-        oS.X[i,:]*oS.X[j,:].T-oS.labelMat[j]*(oS.alphas[j]-alphaJold)*\
-        oS.X[j,:]*oS.X[j,:].T
+        oS.K[i,j]-oS.labelMat[j]*(oS.alphas[j]-alphaJold)*\
+        oS.K[j,j]
         if(0<oS.alphas[i])and(oS.C>oS.alphas[i]):oS.b=b1
         elif (0<oS.alphas[j])and(oS.C>oS.alphas[j]):oS.b=b2
         else:oS.b=(b1+b2)/2.0
@@ -158,7 +187,7 @@ def innerL(i,oS):
     else:return 0
 
 def smoP(dataMatIn,classLabels,C,toler,maxIter,kTup=('lin',0)):
-    oS=optStruct(mat(dataMatIn),mat(classLabels).transpose(),C,toler)
+    oS=optStruct(mat(dataMatIn),mat(classLabels).transpose(),C,toler,kTup)
     iter=0
     entireSet=True;alphaPairsChanged=0
     while(iter<maxIter)and((alphaPairsChanged>0)or(entireSet)):
@@ -189,16 +218,93 @@ def calcWs(alphas,dataArr,classLabels):
         w+=multiply(alphas[i]*labelMat[i],X[i,:].T)
     return w
 
-def kernelTrans(X,A,kTup):
-    m,n=shape(X)
-    K=mat(zeros((m,1)))
-    if kTup[0]=='lin':K=X*A.T
-    elif kTup[0]=='rbf':
-        for j in range(m):
-            deltaRow=X[j,:]-A
-            K[j]=deltaRow*deltaRow.T
-        k=exp(K/(-1*kTup[1]**2))
-    else:raise NameError('not recognized this kernel')
-    return X
 
 
+
+def testRbf(k1=1.3):
+    dataArr,labelArr=loadDataSet('testSetRBF.txt')
+    b,alphas=smoP(dataArr,labelArr,200,0.0001,10000,('rbf',k1))
+    datMat=mat(dataArr);labelMat=mat(labelArr).transpose()
+    svInd=nonzero(alphas.A>0)[0]
+    sVs=datMat[svInd]
+    labelSV=labelMat[svInd]
+    print "there are %d support vectors " %shape(sVs)[0]
+    m,n=shape(datMat)
+    errorCount=0
+    for i in range(m):
+        kernelEval=kernelTrans(sVs,datMat[i,:],('rbf',k1))
+        predict=kernelEval.T*multiply(labelSV,alphas[svInd])+b
+        if sign(predict)!=sign(labelArr[i]):errorCount+=1
+    print "the training error rate is %f" %(float(errorCount/m))
+    dataArr,labelArr=loadDataSet('testSetRBF.txt')
+    errorCount=0
+    dataMat=mat(dataArr);labelMat=mat(labelArr).transpose()
+    m,n=shape(datMat)
+    for i in range(m):
+        kernelEval=kernelTrans(sVs,datMat[i,:],('rbf',k1))
+        predict=kernelEval.T*multiply(labelSV,alphas[svInd]+b)
+        if sign(predict)!=sign(labelArr[i]):errorCount+=1
+    print "the test error rate is %f" %(float(errorCount/m))
+
+#handwriting recognization
+#file is 32*32 but we create a array of 1*1024 to store these chars
+def img2vector(filename):
+    returnVect=zeros((1,1024))
+    fr=open(filename)
+    for i in range(32):
+        lineBtr=fr.readline()
+        for j in range(32):
+            returnVect[0,32*i+j]=int(lineBtr[j])
+    return returnVect
+
+def loadImages(dirName):
+    from os import listdir
+    hwLabels=[]
+    trainingFilelist=listdir(dirName)
+    m=len(trainingFilelist)
+    trainingMat=zeros((m,1024))
+    for i in range(m):
+        fileNameStr=trainingFilelist[i]
+        fileStr=fileNameStr.split('.')[0]
+        classNumStr=int(fileStr.split('_')[0])
+        if classNumStr==9:hwLabels.append(-1)
+        else:hwLabels.append(1)
+        trainingMat[i,:]=img2vector('%s/%s' % (dirName,fileNameStr))
+    return trainingMat,hwLabels
+
+def testDigits(kTup=('rbf',10)):
+    dataArr,labelArr=loadImages('trainingDigits')
+    b,alphas=smoP(dataArr,labelArr,200,0.0001,10000,kTup)
+    datMat=mat(dataArr);labelMat=mat(labelArr).transpose()
+    #返回两个维度，代表了x,y的值。合并起来代表一个坐标数组。
+    #.A是代表array()
+    #其实呢就是想把alpha中的等于1的索引找出来。也就是支持向量的索引
+    '''>>> x
+    array([[ 1.,  0.,  0.],
+           [ 1.,  1.,  1.],
+           [ 0.,  0.,  1.]])
+       >>> np.nonzero(x)
+    (array([0, 1, 1, 1, 2]), array([0, 0, 1, 2, 2]))
+
+    '''
+    svInd=nonzero(alphas.A>0)[0]
+    #一下子把索引对应的行数抽出来组成一个矩阵。
+    sVs=datMat[svInd]
+    labelSV=labelMat[svInd]
+    print "there are %d Support Vectors" % shape(sVs)[0]
+    m,n=shape(datMat)
+    errorCount=0
+    for i in range(m):
+        kernelEval=kernelTrans(sVs,datMat[i,:],kTup)
+        predict=kernelEval.T*multiply(labelSV,alphas[svInd])+b
+        if sign(predict)!=sign(labelArr[i]):errorCount+=1
+    print "the training error rate is :%f" %(float(errorCount)/m)
+    dataArr,labelArr=loadImages('testDigits')
+    errorCount=0
+    datMat=mat(dataArr);labelMat=mat(labelArr).transpose()
+    m,n=shape(datMat)
+    for i in range(m):
+        kernelEval=kernelTrans(sVs,datMat[i,:],kTup)
+        predict=kernelEval.T*multiply(labelSV,alphas[svInd])+b
+        if sign(predict)!=sign(labelArr[i]):errorCount+=1
+    print "the test error rate is %f" % (float(errorCount)/m)
