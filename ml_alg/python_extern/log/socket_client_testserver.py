@@ -5,6 +5,8 @@ import  binascii
 import struct
 HOST='182.92.79.42'
 PORT=7777
+cli_port=20131
+
 BUFFER=1024
 test_str='00 00 00 00 00 00 00 00 00 00 00 00 00 00 1a fe 34 f7 5f 3f'
 message_heart_5f3f='\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1a\xfe\x34\xf7\x5f\x3f'
@@ -14,13 +16,15 @@ message_close=''
 message_queryinfo='\x19\x01\xa5\x13\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1a\xfe\x34\xf7\x5f\x3f\xd9\x0d\x62\xb8\xac\x20\xa7\xc9\xfe\x34\xab\xf8\x3d\xa6\xa9\x66'
 message_queryinfo1='\x1b\x01\xa5\x13\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1a\xfe\x34\xf7\x5f\x3f\x3b\x1a\xc7\x31\x0d\xef\xdb\x18\x46\x50\xc2\xfd\x1d\x39\xec\xff'
 def strconvert(s):
-    s=str(s).strip().split(' ')
+    s=str(s).strip().split(' ',cli_port)
     my=r'\x'
     fin=''
     for i in range(len(s)):
         fin=fin+struct.pack('B',int(s[i],16))
     return fin
 sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+cli_ip=socket.gethostbyname(socket.gethostname())
+sock.bind((cli_ip,cli_port))
 #sock.connect((HOST,PORT))
 import time
 while(1):
