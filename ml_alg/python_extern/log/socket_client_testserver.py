@@ -15,6 +15,8 @@ message_open='\x09\x01\xa5\x13\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1a\xfe\x
 message_close=''
 message_queryinfo='\x19\x01\xa5\x13\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1a\xfe\x34\xf7\x5f\x3f\xd9\x0d\x62\xb8\xac\x20\xa7\xc9\xfe\x34\xab\xf8\x3d\xa6\xa9\x66'
 message_queryinfo1='\x1b\x01\xa5\x13\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1a\xfe\x34\xf7\x5f\x3f\x3b\x1a\xc7\x31\x0d\xef\xdb\x18\x46\x50\xc2\xfd\x1d\x39\xec\xff'
+mes_55fb_on='09 01 dc 8e 00 00 00 00 00 00 00 00 00 00 1a fe 34 f7 55 fb d5 83 2c a1 f7 b7 ac 06 d0 d9 f3 08 56 29 a5 7d ea 24 4d eb 15 15 05 1e 65 96 89 9b a3 6d a1 2b'
+mes_55fb_off='09 01 dc 8e 00 00 00 00 00 00 00 00 00 00 1a fe 34 f7 55 fb d5 83 2c a1 f7 b7 ac 06 d0 d9 f3 08 56 29 a5 7d 56 f0 ba 6b 1b 11 cb 3d 78 fa af 0a 4c 55 82 14'
 def strconvert(s):
     s=str(s).strip().split(' ',cli_port)
     my=r'\x'
@@ -31,7 +33,7 @@ while(1):
     try :
         #Set the whole string
         print strconvert(test_str)
-        sock.sendto(strconvert(test_str),(HOST,PORT))
+        sock.sendto(message_open,(HOST,PORT))
     except socket.error,e:
         #Send failed
         print 'Send failed'
