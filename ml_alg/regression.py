@@ -82,3 +82,26 @@ def thisDraw2(xArr,yArr,k=0.001):
     ax.scatter(xMat[:,1].flatten().A[0],mat(yArr).T.flatten()
                .A[0],s=2,c='red')
     plt.show()
+
+def ridgeRegres(xMat,yMat,lam=0.2):
+    xTx=xMat.T*xMat
+    denom=xTx+eye(shape(xMat)[1])*lam
+    if linalg.det(denom)==0.0:
+        print "this matrix is singular,can not inverse"
+        return
+    ws=denom.I*(xMat.T*yMat)
+    return
+
+def ridgeTest(xArr,yArr):
+    xMat=mat(xArr);yMat=mat(yArr).T
+    yMean=mean(yMat,0)
+    yMat=yMat-yMean
+    xMeans=mean(xMat,0)
+    xVar=var(xMat,0)
+    xMat=(xMat-xMeans)/xVar
+    numTestPts=30
+    wMat=zeros((numTestPts,shape(xMat)[1]))
+    for i in range(numTestPts):
+        ws=ridgeRegres(xMat,yMat,exp(i-10))
+        wMat[i,:]=ws.T
+    return wMat
