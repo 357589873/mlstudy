@@ -33,8 +33,7 @@ while(1):
         print "recvfrom"
         data,addr= sock.recvfrom(BUFFER)
         print "afterecv"
-        print int(binascii.b2a_hex(data[8]),16),'月',int(binascii.b2a_hex(data[9]),16),"日 星期",int(binascii.b2a_hex(data[10]),16),\
-            int(binascii.b2a_hex(data[11]),16),'点',int(binascii.b2a_hex(data[12]),16)
+        print data
         numberErr=0
     except socket.error,e:
         print "timedelay....numnerErr =" ,numberErr
