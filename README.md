@@ -1,2 +1,2 @@
 # mlstudy
-machine learn study demo here
+machine learning in action.
