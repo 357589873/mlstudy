@@ -1,0 +1,130 @@
+#coding:utf-8
+from numpy import *
+def loadDataSet(fileName):
+    dataMat=[]
+    fr=open(fileName)
+    for line in fr.readlines():
+        curLine=line.strip().split('\t')
+        fltLine=map(float,curLine)
+        dataMat.append(fltLine)
+    return dataMat
+
+def distEclud(vecA,vecB):
+    return sqrt(sum(power(vecA-vecB,2)))
+
+def randCent(dataSet,k):
+    n=shape(dataSet)[1]
+    centroids=mat(zeros((k,n)))
+    for j in range(n):
+        minJ=min(dataSet[:,j])
+        #print minJ
+        rangeJ=float(max(dataSet[:,j])-minJ)
+        #print rangeJ*random.rand(k,1)
+        centroids[:,j]=minJ+rangeJ*random.rand(k,1)
+    return centroids
+
+def kMeans(dataSet,k,distMeans=distEclud,createCent=randCent):
+    m=shape(dataSet)[0]
+    clusterAssment=mat(zeros((m,2)))
+    centroids=createCent(dataSet,k)
+    print centroids
+    clusterChanged=True
+    while clusterChanged:
+        clusterChanged=False
+        for i in range(m):
+            minDist=inf;minIndex=-1
+            for j in range(k):
+                distJI=distMeans(centroids[j,:],dataSet[i,:])
+                if distJI<minDist:
+                    minDist=distJI;minIndex=j
+            #看一下clusterAss这个数组里存的变化了没有
+            if clusterAssment[i,0]!=minIndex:clusterChanged=True
+            clusterAssment[i,:]=minIndex,minDist**2
+        print clusterAssment
+        for cent in range(k):
+            print cent,nonzero(clusterAssment[:,0].A==cent)
+            #nonzeros函数是求出来的二维，取[0]可以只要x维的。y维不需要
+            ptsInClust=dataSet[nonzero(clusterAssment[:,0].A==cent)[0]]
+            print ptsInClust
+            #axis代表两个两个方向。0代表竖向
+            centroids[cent,:]=mean(ptsInClust,axis=0)
+            print centroids
+    return centroids,clusterAssment
+
+#二分均值聚类
+def biKmeans(dataSet,k,distMeans=distEclud):
+    m=shape(dataSet)[0]
+    clusterAssment=mat(zeros((m,2)))
+    centroid0=mean(dataSet,axis=0).tolist()[0]
+    centList=[centroid0]
+    for j in range(m):
+        clusterAssment[j,1]=distMeans(mat(centroid0),dataSet[j,:])**2
+    while (len(centList)<k):
+        lowestSSE=inf
+        for i in range(len(centList)):
+            ptsInCurrCluster=dataSet[nonzero(clusterAssment[:,0].A==i)\
+                [0],:]
+            centroidMat,splitClustAss=kMeans(ptsInCurrCluster,2,distMeans)
+            sseSplit=sum(splitClustAss[:,1])
+            #未划分的簇的SSE的值
+            sseNotSplit=\
+            sum(clusterAssment[nonzero(clusterAssment[:,0].A!=i)[0],1])
+            print 'sseSplit,sseNotSplit:',sseSplit,sseNotSplit
+            #划分的和没划分的加一起，看看SSE是不是最小的。
+            if(sseSplit+sseNotSplit)<lowestSSE:
+                bestCentToSplit=i
+                bestNewCents=centroidMat
+                bestClustAss=splitClustAss.copy()
+                lowestSSE=sseNotSplit+sseSplit
+        #新的两个需要替换原来的索引。一个是替换原来的位置，一个是替换最后加上的位置
+        bestClustAss[nonzero(bestClustAss[:,0].A==1)[0],0]=len(centList)
+        bestClustAss[nonzero(bestClustAss[:,0].A==0)[0],0]=bestCentToSplit
+        print 'the bestcenttosplit is :',bestCentToSplit
+        print 'the len of bestClustAss is:',len(bestClustAss)
+        #替换原来那个，然后新增一个，这样就成功的二分
+        centList[bestCentToSplit]=bestNewCents[0,:]
+        centList.append(bestNewCents[1,:])
+        clusterAssment[nonzero(clusterAssment[:,0].A==\
+                               bestCentToSplit)[0],:]==bestClustAss
+    return mat(centList),clusterAssment
+
+#雅虎API发现位置
+import urllib
+import json
+def geoGrab(stAddress,city):
+    apiStem='http://where.yahooapis.com/geocode?'
+    params={}
+    params['flags']='J'
+    params['appid']='aaa0VN6k'
+    params['location']='%s %s' %(stAddress,city)
+    url_params=urllib.urlencode(params)
+    yahooApi=apiStem+url_params
+    print yahooApi
+    c=urllib.urlopen(yahooApi)
+    return json.loads(c.read)
+
+from time import sleep
+def massPlaceFind(fileName):
+    fw=open('places.txt','w')
+    for line in open(fileName).readlines():
+        line=line.strip()
+        lineArr=line.split('\t')
+        retDict=geoGrab(lineArr[1],lineArr[2])
+        if retDict['ResultSet']['Error']==0:
+            lat=float(retDict['ResultSet']['Results'][0]['latitude'])
+            lng=float(retDict['ResultSet']['Results'][0]['longitude'])
+            print "%s\t%f\t%f" %(lineArr[0],lat,lng)
+            fw.write('%s\t%f\t%f\n' %(line,lat,lng))
+        else:print "error fetching"
+        sleep(1)
+    fw.close()
+
+def distSLC(vecA,vecB):
+    a=sin(vecA[0,1]*pi/180)*sin(vecB[0,1]*pi/180)
+    b=cos(vecA[0,1]*pi/180)*cos(vecB[0,1]*pi/180)*\
+      cos(pi*(vecB[0,0]-vecA[0,0])/180)
+    return arccos(a+b)*6371.0
+
+
+
+
