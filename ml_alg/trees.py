@@ -7,10 +7,9 @@ def calcShannnEnt(dataSet):
     numEntries=len(dataSet)
     labelCounts={}
     for featVec in dataSet:
+        #根据label来分类别，-1代表取label，即最后一个。
         currentLabel=featVec[-1]
-        if currentLabel not in labelCounts.keys():
-            labelCounts[currentLabel]=0
-        labelCounts[currentLabel]+=1
+        labelCounts[currentLabel]=labelCounts.get(currentLabel,0)+1
     shannonEnt=0.0
     for key in labelCounts:
         prob=float(labelCounts[key])/numEntries
@@ -21,22 +20,27 @@ def createDataSet():
     dataSet=[[1,1,'yes'],[1,1,'yes'],[1,0,'no'],[0,1,'no'],[0,1,'no']]
     lables=['no surfacing','flippers']
     return dataSet,lables
-
+#把dataset中，axis属性为value的数据集取出，去掉此属性后返回。
 def splitDataSet(dataSet,axis,value):
     retDataSet=[]
     for featVec in dataSet:
         if featVec[axis]==value:
+            #单纯的讲数据中axis属性的值给剔除掉，剩下的重新拼接
             reducedFeatVec=featVec[:axis]
             reducedFeatVec.extend(featVec[axis+1:])
             retDataSet.append(reducedFeatVec)
     return retDataSet
 
 def chooseBestFeatureToSplit(dataSet):
+    #特征数目
     numFeatures=len(dataSet[0])-1
+    #基准熵
     baseEntropy=calcShannnEnt(dataSet)
     bestInfoGain=0.0;bestFeature=-1
+    #对每个特征进行测试，找到最佳属性来进行分割
     for i in range(numFeatures):
         featList=[example[i] for example in dataSet]
+        #元素去重
         uniqueVals=set(featList)
         newEntropy=0.0
         for value in uniqueVals:
