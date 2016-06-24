@@ -22,7 +22,7 @@ def generateAverage():
                 dataDic[item]=dataDic.get(item,zeros(41))/dataNumDic.get(item,0)
                 for key in dataDic[item]:
                     #print key,
-                    fileWrite.write(str(round(key,3))+'\t')
+                    fileWrite.write(str(round(key,3))+' ')
                 #print item
 
                 fileWrite.write(item)
@@ -30,37 +30,77 @@ def generateAverage():
 
     f.close()
     fileWrite.close()
-writecorrect=open(r'F:\BaiduYunDownload\papers\corrected.txt','w')
-writePreword=open('preWork.txt','r')
-prework={}
-lines=writePreword.readlines()
-for line in lines:
-    curline=line.strip().split(' ')
+def loadData(path):
+    fileTest=open(path,'r')
+    lines=fileTest.readlines()
+    nData=len(lines)
+    #print (lines[0].strip().split(' '))
+    mdata=len(lines[0].strip().split(' '))-1
+    dataArray=zeros((nData,mdata))
+    labelList=[]
+    index=0
+    for line in lines:
+        curLine=line.strip().split(' ')
+        #print mdata,nData
+        dataArray[index,:]=array(curLine[0:-1])
+        labelList.append(curLine[-1])
+        index+=1
+    return dataArray,labelList
+#余弦距离矩阵求解
+def cosDisArray(vec1,vec2):
+    if shape(vec1)!=shape(vec2):
+        print "shape error",shape(vec1),shape(vec2)
+    vecMulvec=(vec1*vec2).sum(axis=1)
+    #print vecMulvec
+    vec2add=(vec1*vec1).sum(axis=1)**0.5+(vec2*vec2).sum(axis=1)**0.5
+    return vecMulvec/vec2add
 
-    prework[curline[0]]=prework.get(curline[0],{})
-    prework[curline[0]][curline[1]]=curline[2]
-#print prework
+#数据归一化
+def autoNorm(dataSet):
+    #0代表是按列计算
+    minVals=dataSet.min(0)
+    maxVals=dataSet.max(0)
+    ranges=maxVals-minVals
+    normDataSet=zeros(shape(dataSet))
+    m=dataSet.shape[0]
+    normDataSet=dataSet-tile(minVals,(m,1))
+    normDataSet=normDataSet/tile(ranges,(m,1))
+    return normDataSet,ranges,minVals
 
-with open(r'F:\BaiduYunDownload\papers\corrected.csv') as fcorr:
-    reader=csv.reader(fcorr)
-    curline=[]
-    for row in reader:
-        curline=row
-        allAttibute=[]
-        for item in prework.keys():
-            for itemj in prework[item].keys():
-                allAttibute.append(itemj)
-        if curline[int(item)] not in allAttibute:
-            continue
-        for item in prework.keys():
-            print curline[int(item)]
-            curline[int(item)]=prework[item][curline[int(item)]]
-        for i in range(len(curline)):
-            writecorrect.write(curline[i]+' ')
-        writecorrect.write('\n')
-fcorr.close()
-writecorrect.close()
-writePreword.close()
+def crossValidation():
+    dataArryTest,labelListTest=loadData(r'F:\BaiduYunDownload\papers\corrected.txt')
+    from sklearn import preprocessing
+    # normalize the data attributes
+    dataArryTestNorm = preprocessing.normalize(dataArryTest)
+    #dataArryTestNorm,dataArrayRanges,dataArryMinVals=autoNorm(dataArryTest)
+    aveData,aveLabel=loadData('average.txt')
+    aveDataNorm=preprocessing.normalize(aveData)
+    numDataTest=shape(dataArryTest)[0]
+    print numDataTest
+    numDataAve=shape(aveData)[0]
+    print shape(aveData),shape(dataArryTest)
+    errorCount=0
+    index=0
+    for i in range(numDataTest):
+        resultArrIndex=cosDisArray(tile(dataArryTestNorm[index,:],(numDataAve,1)),aveDataNorm).argsort()
+        resultLabel=aveLabel[resultArrIndex[-1]]
+        #print resultLabel,labelListTest[index]
+        if labelListTest[index]!=resultLabel:
+            errorCount+=1
+        index+=1
+    errorRate=errorCount/float(numDataTest)
+    print 'errorCount is %d errorRaete is %f' %(errorCount,errorRate)
+
+crossValidation()
+
+
+
+
+
+
+
+
+
 
 
 
