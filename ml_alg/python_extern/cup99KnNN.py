@@ -1,6 +1,7 @@
 #coding:utf-8
 from numpy import  *
 import csv
+import pickle
 dataDic={}
 dataNumDic={}
 
@@ -91,7 +92,47 @@ def crossValidation():
     errorRate=errorCount/float(numDataTest)
     print 'errorCount is %d errorRaete is %f' %(errorCount,errorRate)
 
-crossValidation()
+def kmeanCrossValidation(k):
+    dataArrayTest,labelListTest=loadData(r'F:\BaiduYunDownload\papers\corrected.txt')
+    dataArrayTrain,labelListTrain=load(r'F:\BaiduYunDownload\papers\cup99test.txt')
+    from sklearn import preprocessing
+    from sklearn.cluster   import KMeans
+    dataArryTestNorm = preprocessing.normalize(dataArrayTest)
+    clf=KMeans(init='k-means++', n_clusters=k, n_init=10)
+    pre=clf.fit(dataArrayTrain)
+
+    centroid=pre.cluster_centers_
+    centroidWrite=open('centroid','w')
+    pickle.dump(centroid,centroidWrite)
+
+    labelCluster=pre.labels_
+    labelClusterWrite=open('labelCluster','w')
+    pickle.dump(labelCluster,labelClusterWrite)
+
+    labelPre=clf.predict(dataArrayTest)
+    labelClusterWrite=open('labelPre','w')
+    pickle.dump(labelPre,labelClusterWrite)
+
+    labelClusterDic={}
+    for i in range(len(labelCluster)):
+        labelClusterDic[labelCluster[i]]=labelClusterDic.get(labelCluster[i],[]).append(i)
+
+    for item in labelClusterDic.keys():
+        labelList=labelClusterDic[item]
+        labelCount={}
+        for labelitem in labelList:
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
