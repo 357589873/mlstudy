@@ -1,7 +1,13 @@
 #coding:utf-8
 from numpy import  *
+import xgboost as xgb
 import csv
 import pickle
+import operator
+from sklearn import preprocessing
+from sklearn.cluster import DBSCAN
+from sklearn.cluster   import KMeans,AffinityPropagation
+from sklearn.cluster   import MiniBatchKMeans
 dataDic={}
 dataNumDic={}
 
@@ -92,35 +98,79 @@ def crossValidation():
     errorRate=errorCount/float(numDataTest)
     print 'errorCount is %d errorRaete is %f' %(errorCount,errorRate)
 
+def loadKmeansData(dataArrayTest,dataArrayTrain,k,m='load'):
+    if m=='load':
+        centroidRead=open('centroid','r')
+        labelClusterRead=open('labelCluster','r')
+        labelPreRead=open('labelPre','r')
+        centroid=pickle.load(centroidRead)
+        labelCluster=pickle.load(labelClusterRead)
+        labelPre=pickle.load(labelPreRead)
+    else:
+        dataArrayTestNorm = preprocessing.normalize(dataArrayTest)
+        dataArrayTrainNorm = preprocessing.normalize(dataArrayTrain)
+        #clf=MiniBatchKMeans(init='k-means++', n_clusters=k, n_init=10)
+        clf=AffinityPropagation()
+        #clf=DBSCAN(min_samples=30)
+        pre=clf.fit(dataArrayTrainNorm)
+
+
+        centroid=pre.cluster_centers_
+        centroidWrite=open('centroid','w')
+        #pickle.dump(centroid,centroidWrite)
+
+        labelCluster=pre.labels_
+        labelClusterWrite=open('labelCluster','w')
+        #pickle.dump(labelCluster,labelClusterWrite)
+
+        labelPre=clf.predict(dataArrayTestNorm)
+        labelPreWrite=open('labelPre','w')
+        #pickle.dump(labelPre,labelPreWrite)
+
+    return centroid,labelCluster,labelPre
 def kmeanCrossValidation(k):
     dataArrayTest,labelListTest=loadData(r'F:\BaiduYunDownload\papers\corrected.txt')
-    dataArrayTrain,labelListTrain=load(r'F:\BaiduYunDownload\papers\cup99test.txt')
-    from sklearn import preprocessing
-    from sklearn.cluster   import KMeans
-    dataArryTestNorm = preprocessing.normalize(dataArrayTest)
-    clf=KMeans(init='k-means++', n_clusters=k, n_init=10)
-    pre=clf.fit(dataArrayTrain)
+    dataArrayTrain,labelListTrain=loadData(r'F:\BaiduYunDownload\papers\cup99testmini.txt')
 
-    centroid=pre.cluster_centers_
-    centroidWrite=open('centroid','w')
-    pickle.dump(centroid,centroidWrite)
 
-    labelCluster=pre.labels_
-    labelClusterWrite=open('labelCluster','w')
-    pickle.dump(labelCluster,labelClusterWrite)
-
-    labelPre=clf.predict(dataArrayTest)
-    labelClusterWrite=open('labelPre','w')
-    pickle.dump(labelPre,labelClusterWrite)
-
+    centroid,labelCluster,labelPre=loadKmeansData(dataArrayTest,dataArrayTrain,k,'notload')
+    print '计算每簇中的记录集...'
+    #计算每簇中的记录集
     labelClusterDic={}
     for i in range(len(labelCluster)):
-        labelClusterDic[labelCluster[i]]=labelClusterDic.get(labelCluster[i],[]).append(i)
-
+        temp=labelClusterDic.get(labelCluster[i],[])
+        temp.append(i)
+        labelClusterDic[labelCluster[i]]=temp
+    print '簇类别与真实类别映射...'
+    #簇类别与真实类别映射
+    labelMap={}
     for item in labelClusterDic.keys():
         labelList=labelClusterDic[item]
         labelCount={}
         for labelitem in labelList:
+            labelStr=labelListTrain[labelitem]
+            labelCount[labelStr]=labelCount.get(labelStr,0)+1
+        #将簇的类别跟实际label对应起来，并且计算单簇的错误率
+        labelMap[item]=max(labelCount.iteritems(), key=operator.itemgetter(1))[0]
+        #print labelMap[item],type(labelMap[item])
+        labelErrorRate=(len(labelList)-labelCount[labelMap[item]])/float(len(labelList))
+        #print 'label Error rate is %f' %labelErrorRate
+    print '交叉验证...'
+    print labelMap
+    errorCount=0
+    for i in range(len(labelPre)):
+        labeli=labelPre[i]
+        labeliStr=labelMap[labeli]
+        if labeliStr!=labelListTest[i]:
+            errorCount+=1
+
+    print "k is %d errorRate is %f"  %(k,errorCount/float(len(labelListTest)))
+
+
+kmeanCrossValidation(100)
+
+
+
 
 
 
